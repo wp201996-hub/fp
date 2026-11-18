@@ -71,7 +71,7 @@ button{font-family:inherit}
   <div id="vBlocks"></div>
 </main>
 <button class="fab" id="fab">編集する</button>
- 
+
 <div class="sheet" id="sheet">
   <div class="panel">
     <div id="lock" class="lock">
@@ -106,7 +106,7 @@ button{font-family:inherit}
     </div>
   </div>
 </div>
- 
+
 <script>
 var KEY="peraichi-demo-v2";
 var SAMPLE={name:"さくら食堂",sum:"名古屋・栄の家庭料理のお店",hero:"",blocks:[
@@ -119,7 +119,9 @@ var S=[{m:/^(x|twitter)\.com$/,n:"X",c:"#111",l:"X"},{m:/^threads\.(net|com)$/,n
 var LABEL={text:"文章ブロック",image:"画像ブロック",links:"リンクブロック",post:"投稿ブロック"};
 var st=clone(SAMPLE),authed=false,PW="",tm=0;
 function clone(o){return JSON.parse(JSON.stringify(o))}
-function save(){clearTimeout(tm);tm=setTimeout(function(){fetch("/api/page",{method:"POST",headers:{"content-type":"application/json","x-pw":PW},body:JSON.stringify(st)}).then(function(r){$("saveErr").textContent=r.ok?"":"保存できませんでした。もう一度お試しください。"}).catch(function(){$("saveErr").textContent="通信できませんでした。"})},600)}
+function doSave(){tm=0;fetch("/api/page",{method:"POST",headers:{"content-type":"application/json","x-pw":PW},body:JSON.stringify(st)}).then(function(r){$("saveErr").textContent=r.ok?"":"保存できませんでした。もう一度お試しください。"}).catch(function(){$("saveErr").textContent="通信できませんでした。"})}
+function save(){clearTimeout(tm);tm=setTimeout(doSave,2000)}
+function flush(){if(tm){clearTimeout(tm);doSave()}}
 function $(i){return document.getElementById(i)}
 function fix(u){u=(u||"").trim();if(!u)return"";return/^https?:\/\//.test(u)?u:"https://"+u}
 function svc(u){try{var x=new URL(fix(u)),h=x.hostname.replace(/^www\./,"");if(h==="google.com"&&x.pathname.indexOf("/maps")===0)return{n:"Googleマップ",c:"#1a73e8",l:"MAP",h:h};for(var i=0;i<S.length;i++)if(S[i].m.test(h))return{n:S[i].n,c:S[i].c,l:S[i].l,h:h};return{n:h,c:"#4a5a54",l:h.charAt(0).toUpperCase(),h:h}}catch(e){return null}}
@@ -195,7 +197,7 @@ function blocks(){
 }
 function fill(){$("eName").value=st.name;$("eSum").value=st.sum;$("ePw").value="";var g=$("gc");g.textContent="";colorRow(g,"会社名の色",st,"cName","#16221d");colorRow(g,"概要の色",st,"cSum","#1f6f54");colorRow(g,"背景の色",st,"bg","#f3f6f4");var hg=$("hg");hg.textContent="";hg.appendChild(el("label",null,"画像の上の文字(任意)"));var ta=el("textarea");ta.placeholder="例: 旬の味を、毎日。";ta.style.minHeight="64px";ta.value=st.ht||"";ta.oninput=function(){st.ht=ta.value;save();view()};hg.appendChild(ta);colorRow(hg,"文字の色",st,"hc","#ffffff");choice(hg,"文字の位置","hp",[["t","上"],["m","中央"],["b","下",1]]);choice(hg,"文字の大きさ","hs",[[18,"小"],[24,"中",1],[32,"大"]]);choice(hg,"画像の明るさ(文字を読みやすく)","hd",[[false,"そのまま",1],[true,"少し暗くする"]]);blocks()}
 function open_(){$("sheet").classList.add("on");$("lock").hidden=authed;$("edit").hidden=!authed;$("pwErr").textContent="";$("pwIn").value="";if(authed)fill()}
-function close_(){$("sheet").classList.remove("on")}
+function close_(){flush();$("sheet").classList.remove("on")}
 $("fab").onclick=open_;if(location.hash!=="#edit")$("fab").style.display="none";window.onhashchange=function(){$("fab").style.display=location.hash==="#edit"?"":"none"};
 document.querySelectorAll("[data-close]").forEach(function(b){b.onclick=close_});
 $("sheet").onclick=function(e){if(e.target===$("sheet"))close_()};
@@ -210,8 +212,8 @@ document.querySelectorAll("[data-add]").forEach(function(b){b.onclick=function()
 $("reset").onclick=function(){var b=$("reset");if(b.dataset.s){b.dataset.s="";b.textContent="サンプルの内容に戻す";st=clone(SAMPLE);save();fill();view();return}b.dataset.s="1";b.textContent="本当に戻す(もう一度押す)";setTimeout(function(){b.dataset.s="";b.textContent="サンプルの内容に戻す"},3000)};
 $("img").onchange=function(){var f=this.files[0];if(!f)return;var r=new FileReader();
   r.onload=function(){var im=new Image();im.onload=function(){var w=Math.min(1000,im.width),c=document.createElement("canvas");c.width=w;c.height=im.height*w/im.width;c.getContext("2d").drawImage(im,0,0,c.width,c.height);st.hero=c.toDataURL("image/jpeg",.8);save();view()};im.src=r.result};r.readAsDataURL(f)};
+document.addEventListener("visibilitychange",function(){if(document.hidden)flush()});
 fetch("/api/page").then(function(r){return r.json()}).then(function(d){if(d&&d.blocks)st=d}).catch(function(){}).then(view);
 </script>
 </body>
 </html>
- 
